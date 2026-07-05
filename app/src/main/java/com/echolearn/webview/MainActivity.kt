@@ -221,8 +221,23 @@ class MainActivity : ComponentActivity() {
 
 
     override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) {
-            webView.goBack()
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript("""
+                (function() {
+                    if (typeof window.app !== 'undefined' && typeof window.app.onBackPressed === 'function') {
+                        return window.app.onBackPressed();
+                    }
+                    return false;
+                })();
+            """.trimIndent()) { result ->
+                if (result != "true") {
+                    if (webView.canGoBack()) {
+                        webView.goBack()
+                    } else {
+                        super.onBackPressed()
+                    }
+                }
+            }
         } else {
             super.onBackPressed()
         }

@@ -13,5 +13,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
 rootProject.name = "DualShengWebView_FullyLocal"
 include(":app")

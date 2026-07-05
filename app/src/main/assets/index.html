@@ -701,7 +701,7 @@
 </section>
 <!-- ================= MAIN AUTH FLOW ================= -->
 <section class="view-screen overflow-y-auto hide-scrollbar" id="screen-auth">
-<div class="w-full max-w-[480px] mx-auto min-h-[calc(var(--app-vh,1vh)*100)] flex flex-col pt-6 pb-safe-bottom px-margin-mobile">
+<div class="w-full max-w-[480px] mx-auto h-full flex flex-col pt-6 pb-safe-bottom px-margin-mobile">
 <div class="flex flex-col items-center text-center mb-4 z-20 w-full shrink-0" id="brand-header">
 <div class="mb-sm flex justify-center items-center h-[120px] w-[120px] logo-container" id="brand-logo-dest"></div>
 <div class="transition-opacity duration-300" id="brand-text">
@@ -920,15 +920,19 @@
 <h2 class="text-[20px] font-semibold text-on-surface">双生</h2>
 <span class="text-[12px] text-on-surface-variant ml-auto">你的学习分身</span>
 </div>
+<div class="relative mb-4">
+    <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">search</span>
+    <input class="w-full pl-9 pr-3 py-2 bg-brand-surface rounded-xl text-[14px] outline-none border-none" placeholder="搜索分身或对话..." type="text"/>
+</div>
+<button class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-brand-blue text-white btn-press focus:outline-none mb-2 shadow-md shadow-brand-blue/20" onclick="app.navigate('create-twin'); app.closeDrawer()">
+    <span class="material-symbols-rounded text-[18px]">add</span>
+    <span class="font-medium text-[14px]">新建分身</span>
+</button>
 </div>
 <div class="px-4 flex-1 overflow-y-auto" id="sidebar-twins-list">
 <!-- Rendered via JS -->
 </div>
-<div class="p-4 border-t border-brand-blue/5 space-y-2 mt-auto pb-safe-bottom">
-<button class="w-full flex items-center gap-3 p-3 rounded-[16px] bg-brand-light-blue text-brand-dark-blue btn-press focus:outline-none transition-colors-fast" onclick="app.navigate('create-twin'); app.closeDrawer()">
-<span class="material-symbols-rounded text-[20px]">add</span>
-<span class="font-medium text-[15px]">新建分身</span>
-</button>
+<div class="p-4 border-t border-brand-blue/5 mt-auto pb-safe-bottom">
 <button class="w-full flex items-center gap-3 p-3 rounded-[16px] hover:bg-brand-surface text-on-surface-variant btn-press focus:outline-none transition-colors-fast" onclick="app.navigate('settings'); app.closeDrawer()">
 <span class="material-symbols-rounded text-[20px]">settings</span>
 <span class="font-medium text-[15px]">设置</span>
@@ -1880,35 +1884,80 @@
             }
         },
 
+        onBackPressed() {
+            if (this.state.isUploadSheetOpen) {
+                this.toggleUploadSheet(false);
+                return true;
+            }
+            if (this.state.isDrawerOpen) {
+                this.closeDrawer();
+                return true;
+            }
+            if (this.state.currentScreen !== 'main-chat' && this.state.currentScreen !== 'auth') {
+                this.navigate('main-chat');
+                return true;
+            }
+            return false;
+        },
+
         pushScreen(screenId) {
             if (this.state.currentScreen === screenId) return;
             history.pushState({ screen: screenId }, '', `#${screenId}`);
             this.navigateInternal(screenId);
         },
 
-        navigateInternal(screenId) {
+        navigateInternal(screenId, options = {}) {
+            if (this.isAnimating) return;
+            
             const current = document.getElementById(`screen-${this.state.currentScreen}`);
             const next = document.getElementById(`screen-${screenId}`);
             if(!next || current === next) return;
             
-            if (current) {
-                current.classList.add('leaving');
-                current.classList.remove('active', 'entering');
-            }
+            this.isAnimating = true;
             
-            if (next) {
-                next.classList.add('entering');
-                next.classList.remove('leaving');
-            }
-            
-            setTimeout(() => {
-                if(current) current.classList.remove('leaving', 'active');
-                if(next) {
-                    next.classList.remove('entering');
-                    next.classList.add('active');
+            requestAnimationFrame(() => {
+                let transitionFired = false;
+                const onTransitionEnd = (e) => {
+                    if (e && e.target !== next && e.target !== current) return;
+                    if (transitionFired) return;
+                    transitionFired = true;
+                    
+                    if (next) {
+                        next.removeEventListener('transitionend', onTransitionEnd);
+                        next.classList.remove('entering');
+                        next.classList.add('active');
+                    }
+                    if (current) {
+                        current.classList.remove('leaving', 'active');
+                    }
+                    this.state.currentScreen = screenId;
+                    this.isAnimating = false;
+                };
+
+                if (current) {
+                    current.classList.add('leaving');
+                    current.classList.remove('active', 'entering');
                 }
-                this.state.currentScreen = screenId;
-            }, 280);
+                
+                if (next) {
+                    // For .view-screen (like main-chat), it doesn't have .entering in CSS, 
+                    // so we must add .active directly to trigger its fade-in transition.
+                    if (next.classList.contains('view-screen')) {
+                        next.classList.add('active');
+                    } else {
+                        next.classList.add('entering');
+                    }
+                    next.classList.remove('leaving');
+                    next.addEventListener('transitionend', onTransitionEnd);
+                }
+                
+                // Fallback in case transitionend never fires (e.g. no transition defined or invisible)
+                setTimeout(() => {
+                    if (!transitionFired) {
+                        onTransitionEnd(null);
+                    }
+                }, 350);
+            });
         },
 
         navigate(screenId) {
