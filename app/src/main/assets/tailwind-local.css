@@ -49,6 +49,8 @@ button{cursor:pointer;background:transparent;border:0;padding:0;}
 .bg-outline-variant\/40{background-color:rgba(190,200,209,0.4)}
 .bg-primary-container{background-color:#E6F4FF}
 .bg-purple-50{background-color:#faf5ff}
+.bg-blue-500{background-color:rgb(59, 130, 246)}
+.bg-purple-500{background-color:rgb(168, 85, 247)}
 .bg-surface-container-highest{background-color:#e4e2e1}
 .bg-transparent{background-color:transparent}
 .bg-white{background-color:#ffffff}
@@ -385,3 +387,43 @@ button{cursor:pointer;background:transparent;border:0;padding:0;}
 .before\:left-\[35px\]::before{left:35px;}
 .before\:w-\[2px\]::before{width:2px;}
 .before\:bg-outline-variant\/10::before{background:rgba(190,200,209,.10);}
+
+/* ===== Patch: local utility corrections ===== */
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("./fonts/PlusJakartaSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("./fonts/PlusJakartaSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+:root{
+  --local-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei",
+    "Noto Sans CJK SC", sans-serif;
+}
+
+.max-w-md { max-width: 28rem !important; }
+.min-w-0 { min-width: 0 !important; }
+.ml-13 { margin-left: 3.25rem !important; }
+.pl-13 { padding-left: 3.25rem !important; }
+
+@media (max-width: 767.98px) {
+  #screen-settings main > div,
+  #screen-create-twin main > div,
+  #screen-upload-material main > div,
+  #screen-twin-library main > div,
+  #screen-learning-route main > div,
+  #screen-mistake-review main > div,
+  #screen-blackboard main > div {
+    max-width: none !important;
+    width: 100% !important;
+  }
+}

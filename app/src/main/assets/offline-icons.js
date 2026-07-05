@@ -39,7 +39,11 @@
     upload_file:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-1 9v-4H9l3-3 3 3h-3v4h-2z',
     verified:'M12 2 15 5.3l4.4-.6.6 4.4L23 12l-3 2.9-.6 4.4-4.4-.6L12 22l-3-3.3-4.4.6-.6-4.4L1 12l3-2.9.6-4.4 4.4.6L12 2zm-1 13.2 6-6-1.4-1.4L11 12.4 8.4 9.8 7 11.2l4 4z',
     verified_user:'M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 15-4-4 1.41-1.41L11 13.17l5.59-5.58L18 9l-7 7z',
-    visibility:'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'
+    visibility:'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+    visibility_off:'M12 6c3.79 0 7.17 2.13 8.82 5.5-.7 1.43-1.82 2.65-3.2 3.56L19 16.44C20.26 15.36 21.27 13.99 22 12c-1.73-4.39-6-7.5-10-7.5-1.55 0-3.02.3-4.36.83l1.53 1.53C10.05 6.31 11 6 12 6zm-9.19-.19L4.1 7.1 6 9c-1.26 1.08-2.27 2.45-3 4 1.73 4.39 6 7.5 10 7.5 1.55 0 3.02-.3 4.36-.83l2.54 2.54 1.29-1.29L4.1 3.81 2.81 5.1zM9.53 12.53l2.94 2.94A2 2 0 0 1 9.53 12.53zm2.84 5.97c-3.79 0-7.17-2.13-8.82-5.5.65-1.33 1.67-2.49 2.94-3.39l1.55 1.55a4 4 0 0 0 5.42 5.42l1.45 1.45c-.82.31-1.67.47-2.54.47z',
+    account_circle:'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm0 14c-2.67 0-5.03-1.34-6.47-3.39C6.58 14.94 9.53 14 12 14s5.42.94 6.47 2.61C17.03 18.66 14.67 20 12 20z',
+    school:'M12 3 1 9l11 6 9-4.91V17h2V9L12 3zm0 14-7-3.82v4L12 21l7-3.82v-4L12 17z',
+    font_download:'M9.93 13.5h4.14L12 7.98 9.93 13.5zM20 2H8c-1.1 0-2 .9-2 2v3h2V4h12v12h-3v2h3c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 8 1 20h2.4l1.2-3h5.8l1.2 3H14L9 8H6zm-.6 7 2.1-5.25L9.6 15H5.4z'
   };
   function sizeFromClass(el){
     var cls=Array.prototype.slice.call(el.classList||[]).join(' ');
@@ -54,7 +58,7 @@
     return computed && computed > 0 ? computed : 24;
   }
   function replaceIcon(el){
-    if(!el || el.classList.contains('local-icon-ready')) return;
+    if(!el) return;
     var name=(el.textContent||'').trim();
     if(!name || name.indexOf('${')===0) return;
     var path=PATHS[name] || 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z';
@@ -80,15 +84,19 @@
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ replaceAll(document); }); else replaceAll(document);
   var obs = new MutationObserver(function(muts){
-    for(var i=0;i<muts.length;i++){
-      var ms=muts[i];
-      for(var j=0;j<ms.addedNodes.length;j++){
-        var n=ms.addedNodes[j];
-        if(n.nodeType!==1) continue;
-        if(n.matches && n.matches('.material-symbols-rounded,.material-symbols-outlined')) replaceIcon(n);
-        replaceAll(n);
+    muts.forEach(function(ms){
+      if (ms.type === 'characterData' && ms.target.parentElement?.matches('.material-symbols-rounded,.material-symbols-outlined')) {
+        replaceIcon(ms.target.parentElement);
       }
-    }
+      ms.addedNodes.forEach(function(n){
+        if(n.nodeType === 1){
+          if(n.matches?.('.material-symbols-rounded,.material-symbols-outlined')) replaceIcon(n);
+          replaceAll(n);
+        } else if (n.nodeType === 3 && n.parentElement?.matches('.material-symbols-rounded,.material-symbols-outlined')) {
+          replaceIcon(n.parentElement);
+        }
+      });
+    });
   });
-  if(document.documentElement) obs.observe(document.documentElement,{childList:true,subtree:true});
+  if(document.documentElement) obs.observe(document.documentElement,{childList:true,subtree:true,characterData:true});
 })();

@@ -3,6 +3,7 @@ package com.echolearn.webview
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -17,6 +18,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : ComponentActivity() {
 
@@ -33,8 +35,16 @@ class MainActivity : ComponentActivity() {
 
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
-            val uri = data?.data
-            callback.onReceiveValue(if (uri != null) arrayOf(uri) else emptyArray())
+            val results = mutableListOf<Uri>()
+            
+            data?.data?.let { results.add(it) }
+            data?.clipData?.let { clipData ->
+                for (i in 0 until clipData.itemCount) {
+                    results.add(clipData.getItemAt(i).uri)
+                }
+            }
+            // Use distinct to avoid duplicates if both data and clipData are populated
+            callback.onReceiveValue(results.distinct().toTypedArray())
         } else {
             callback.onReceiveValue(emptyArray())
         }
@@ -46,7 +56,10 @@ class MainActivity : ComponentActivity() {
 
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-        ensureRuntimePermissions()
+
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
 
         webView = WebView(this)
 
@@ -58,17 +71,21 @@ class MainActivity : ComponentActivity() {
             )
         )
 
-        WebView.setWebContentsDebuggingEnabled(true)
+        if (0 != (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)) {
+            WebView.setWebContentsDebuggingEnabled(true)
+        } else {
+            WebView.setWebContentsDebuggingEnabled(false)
+        }
 
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
 
-            allowFileAccess = true
+            allowFileAccess = false
             allowContentAccess = true
-            allowFileAccessFromFileURLs = true
-            allowUniversalAccessFromFileURLs = true
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
 
             loadWithOverviewMode = false
             useWideViewPort = true
@@ -78,23 +95,51 @@ class MainActivity : ComponentActivity() {
             textZoom = 100
 
             mediaPlaybackRequiresUserGesture = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
 
             userAgentString = "$userAgentString DualShengAndroidWebView"
         }
 
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(request.url)
+            }
+
             override fun shouldOverrideUrlLoading(
                 view: WebView,
                 request: WebResourceRequest
             ): Boolean {
-                val url = request.url.toString()
-                if (url.startsWith("tel:") || url.startsWith("mailto:")) {
-                    startActivity(Intent(Intent.ACTION_VIEW, request.url))
-                    return true
+                val uri = request.url
+                val scheme = uri.scheme?.lowercase() ?: return false
+
+                return when (scheme) {
+                    "http", "https" -> false
+                    "tel", "mailto" -> {
+                        startActivity(Intent(Intent.ACTION_VIEW, uri))
+                        true
+                    }
+                    "intent" -> {
+                        try {
+                            val intent = Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
+                            startActivity(intent)
+                            true
+                        } catch (_: Exception) {
+                            true
+                        }
+                    }
+                    else -> {
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            true
+                        } catch (_: ActivityNotFoundException) {
+                            true
+                        }
+                    }
                 }
-                return false
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -113,7 +158,34 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun onPermissionRequest(request: PermissionRequest) {
-                request.grant(request.resources)
+                val allow = mutableListOf<String>()
+
+                request.resources.forEach { res ->
+                    when (res) {
+                        PermissionRequest.RESOURCE_AUDIO_CAPTURE -> {
+                            if (ContextCompat.checkSelfPermission(
+                                    this@MainActivity, Manifest.permission.RECORD_AUDIO
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                allow += res
+                            }
+                        }
+                        PermissionRequest.RESOURCE_VIDEO_CAPTURE -> {
+                            if (ContextCompat.checkSelfPermission(
+                                    this@MainActivity, Manifest.permission.CAMERA
+                                ) == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                allow += res
+                            }
+                        }
+                    }
+                }
+
+                if (allow.isNotEmpty()) {
+                    request.grant(allow.toTypedArray())
+                } else {
+                    request.deny()
+                }
             }
 
             override fun onShowFileChooser(
@@ -125,12 +197,17 @@ class MainActivity : ComponentActivity() {
                 fileChooserCallback = filePathCallback
 
                 return try {
-                    fileChooserLauncher.launch(fileChooserParams.createIntent())
+                    val intent = fileChooserParams.createIntent()
+                    if (fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                    }
+                    fileChooserLauncher.launch(intent)
                     true
                 } catch (e: Exception) {
                     val fallbackIntent = Intent(Intent.ACTION_GET_CONTENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
                         type = "*/*"
+                        putExtra(Intent.EXTRA_ALLOW_MULTIPLE, fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE)
                     }
                     fileChooserLauncher.launch(fallbackIntent)
                     true
@@ -138,23 +215,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
-    private fun ensureRuntimePermissions() {
-        val permissions = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
-        )
 
-        val needRequest = permissions.any {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (needRequest) {
-            ActivityCompat.requestPermissions(this, permissions, 1001)
-        }
-    }
 
     override fun onBackPressed() {
         if (::webView.isInitialized && webView.canGoBack()) {

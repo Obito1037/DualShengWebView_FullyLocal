@@ -132,8 +132,8 @@
         /* Base View System & Unified Theme */
         html, body {
             width: 100%;
-            height: 100vh; /* Fallback */
-            min-height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
+            min-height: calc(var(--app-vh, 1vh) * 100);
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -272,7 +272,7 @@
             pointer-events: none;
             transition: opacity 300ms cubic-bezier(0.2, 0, 0, 1);
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         
         .overlay-screen.active {
@@ -321,6 +321,16 @@
         }
     </style>
 <style data-purpose="app-styles">
+        @keyframes progress-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .composer-container {
+            bottom: var(--keyboard-inset, 0px);
+            transition: bottom 180ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        
         /* Main App Shared Styles */
         .glass-header {
             background: rgba(247, 251, 255, 0.85);
@@ -370,7 +380,7 @@
             top: 0;
             left: 0;
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
             display: flex;
             flex-direction: column;
             opacity: 0;
@@ -418,7 +428,7 @@
             pointer-events: none;
             transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         #drawer-overlay.active {
             opacity: 1;
@@ -427,7 +437,7 @@
         #drawer {
             transform: translateX(-100%);
             transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         #drawer.active {
             transform: translateX(0);
@@ -631,7 +641,7 @@
             pointer-events: none;
             transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         #upload-overlay.active {
             opacity: 1;
@@ -644,7 +654,7 @@
             inset: 0;
             z-index: 1000;
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
             /* background is handled globally */
         }
         
@@ -685,13 +695,13 @@
 <div class="absolute bottom-8 left-0 right-0 flex flex-col items-center space-y-lg px-margin-mobile" id="splash-footer">
 <p class="text-secondary tracking-widest uppercase font-body-lg text-body-lg">试错留给分身，时间留给成长</p>
 <div class="w-48 h-1 bg-surface-container-highest rounded-full overflow-hidden relative">
-<div class="absolute inset-0 bg-primary-container rounded-full w-1/2 shadow-[0px_0px_12px_rgba(33,167,230,0.3)]" style="animation: progress-shimmer 2.5s infinite linear; @keyframes progress-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }"></div>
+<div class="absolute inset-0 bg-primary-container rounded-full w-1/2 shadow-[0px_0px_12px_rgba(33,167,230,0.3)]" style="animation: progress-shimmer 2.5s infinite linear;"></div>
 </div>
 </div>
 </section>
 <!-- ================= MAIN AUTH FLOW ================= -->
 <section class="view-screen overflow-y-auto hide-scrollbar" id="screen-auth">
-<div class="w-full max-w-[480px] mx-auto min-h-[100dvh] flex flex-col pt-6 pb-safe-bottom px-margin-mobile">
+<div class="w-full max-w-[480px] mx-auto min-h-[calc(var(--app-vh,1vh)*100)] flex flex-col pt-6 pb-safe-bottom px-margin-mobile">
 <div class="flex flex-col items-center text-center mb-4 z-20 w-full shrink-0" id="brand-header">
 <div class="mb-sm flex justify-center items-center h-[120px] w-[120px] logo-container" id="brand-logo-dest"></div>
 <div class="transition-opacity duration-300" id="brand-text">
@@ -932,7 +942,7 @@
 <div class="w-12 h-1.5 bg-outline-variant/40 rounded-full mx-auto mb-6"></div>
 <h3 class="text-[18px] font-semibold text-on-surface mb-6 text-center">发送内容或上传文件</h3>
 <div class="grid grid-cols-4 gap-4 max-w-[400px] mx-auto w-full">
-<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); app.navigate('upload-material')">
+<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); app.pickFiles('.pdf,.doc,.docx,.ppt,.pptx,.txt,.md')">
 <div class="w-14 h-14 rounded-[20px] bg-blue-50 text-brand-blue flex items-center justify-center shadow-sm">
 <span class="material-symbols-rounded text-[28px]">description</span>
 </div>
@@ -1072,7 +1082,7 @@
 <div class="flex flex-wrap gap-2 ml-13 pl-13">
 <button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.navigate('learning-route')">学习路线</button>
 <button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.navigate('blackboard')">黑板演示</button>
-<button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.navigate('upload-material')">补充资料</button>
+<button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.pickFiles('.pdf,.doc,.docx,.ppt,.pptx,.txt,.md,image/*')">补充资料</button>
 </div>
 </div>
 <div class="flex flex-col gap-3 w-full stagger-enter stagger-5 hidden" id="loading-message">
@@ -1636,6 +1646,11 @@
         ]
     };
 
+    window.addEventListener('popstate', (e) => {
+        const screen = e.state?.screen || 'main-chat';
+        app.navigateInternal(screen, { fromPopState: true });
+    });
+
     const app = {
         state: {
             currentScreen: 'main-chat',
@@ -1651,6 +1666,39 @@
             this.renderSidebar();
             this.updateMainView();
             this.handleInput(); 
+            this.bindFileInput();
+        },
+
+        bindFileInput() {
+            const input = document.getElementById('material-file-input');
+            if (!input) return;
+
+            input.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+
+                const twin = appData.twins.find(t => t.id === this.state.selectedTwinId);
+                if (twin) {
+                    const newConvId = 'conv-' + Date.now();
+                    twin.conversations.unshift({
+                        id: newConvId,
+                        title: `上传了 ${files.length} 个文件`,
+                        time: '刚刚'
+                    });
+                    this.state.selectedConversationId = newConvId;
+                    this.renderSidebar();
+                    this.updateMainView();
+                }
+
+                input.value = '';
+            });
+        },
+
+        pickFiles(accept = '*/*') {
+            const input = document.getElementById('material-file-input');
+            if (!input) return;
+            input.accept = accept;
+            input.click();
         },
 
         renderSidebar() {
@@ -1747,7 +1795,12 @@
                 
                 const iconContainer = document.getElementById('empty-state-icon-container');
                 if(iconContainer) {
-                    iconContainer.className = `w-24 h-24 rounded-[32px] flex items-center justify-center mb-6 relative shadow-lg bg-${twin.color}-500`;
+                    const twinBgMap = {
+                        blue: 'bg-blue-500',
+                        green: 'bg-green-500',
+                        purple: 'bg-purple-500'
+                    };
+                    iconContainer.className = `w-24 h-24 rounded-[32px] flex items-center justify-center mb-6 relative shadow-lg ${twinBgMap[twin.color] || 'bg-brand-blue'}`;
                 }
             }
 
@@ -1827,7 +1880,13 @@
             }
         },
 
-        navigate(screenId) {
+        pushScreen(screenId) {
+            if (this.state.currentScreen === screenId) return;
+            history.pushState({ screen: screenId }, '', `#${screenId}`);
+            this.navigateInternal(screenId);
+        },
+
+        navigateInternal(screenId) {
             const current = document.getElementById(`screen-${this.state.currentScreen}`);
             const next = document.getElementById(`screen-${screenId}`);
             if(!next || current === next) return;
@@ -1850,6 +1909,10 @@
                 }
                 this.state.currentScreen = screenId;
             }, 280);
+        },
+
+        navigate(screenId) {
+            this.pushScreen(screenId);
         },
 
         toggleDrawer(force) {
@@ -1907,4 +1970,5 @@
     document.addEventListener('DOMContentLoaded', () => app.init());
 </script>
 <!-- END: Scripts -->
+<input id="material-file-input" class="hidden" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,image/*" multiple />
 </body></html>
